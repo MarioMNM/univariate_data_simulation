@@ -1,1 +1,1 @@
-# univariate_data_simulayion
+# univariate_data_simulation
