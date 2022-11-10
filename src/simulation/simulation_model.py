@@ -6,7 +6,8 @@ from src.statistics.KDE import QuantileFunctionKDEFitter, BandwidthSelectionMeth
 
 class SimulationModel:
     def __init__(
-            self, data: np.ndarray,
+            self,
+            data: np.ndarray,
             gridsize: int = 1001,
             lim_sup: float = None,
             method: BandwidthSelectionMethod = averaged_bandwidth_selection_method,
@@ -32,7 +33,7 @@ class SimulationModel:
 
         sample = []
         for i in range(0, num_simulation):
-            sample = np.array(sample, self._quantile_function(rand.random()))
+            sample = np.append(sample, self._quantile_function(rand.random()))
 
         return sample
 
@@ -44,10 +45,10 @@ def describe(sample: np.ndarray):
     data = np.append(data, sample.min())
     data = np.append(data, np.percentile(sample, [25, 50, 75, 80, 90, 99, 99.50]))
     data = np.append(data, sample.max())
-    df = pd.DataFrame(
-                data=data,
-                columns=['count, mean, std, min, 25%, 50%, 50%, 80%, 90%, 99%, 99.50%, max'],
-            )
 
-    return df
+    column_names = ['count', 'mean', 'std', 'min', '25%', '50%', '50%', '80%', '90%', '99%', '99.50%', 'max']
+
+    res = {column_names[i]: data[i] for i in range(len(column_names))}
+
+    return pd.Series(res)
 
