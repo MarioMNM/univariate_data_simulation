@@ -111,7 +111,7 @@ class QuantileFunctionKDEFitter:
         self._lim_sup = lim_sup
         self._mult_factor = mult_factor
 
-    def _fit(self, data: np.ndarray) -> QuantileFunction:
+    def fit(self, data: np.ndarray) -> QuantileFunction:
         """
         Returns an interpolated quantile function using a
         BandwidthSelectionMethod and the KDE class
