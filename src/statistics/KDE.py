@@ -8,7 +8,8 @@ import scipy
 import statsmodels.api as sm
 from rpy2 import robjects
 
-from tools.array import ensure_strictly_increasing
+from src.statistics.univariate import InterpolatedQuantileFunction, QuantileFunction
+from src.tools.array import ensure_strictly_increasing
 
 ks = rpackages.importr("ks")
 
@@ -27,7 +28,6 @@ class BandwidthSelectionMeta(type(Enum), type(BandwidthSelectionMethod)):
 
 class BandwidthSelectionMethods(BandwidthSelectionMethod, Enum, metaclass=BandwidthSelectionMeta):
     hscv = auto()
-    hlscv = auto()
     botev = auto()
 
     def fit(self, data: np.ndarray) -> float:
@@ -35,8 +35,6 @@ class BandwidthSelectionMethods(BandwidthSelectionMethod, Enum, metaclass=Bandwi
 
         if self is BandwidthSelectionMethods.hscv:
             bw = ks.hscv(data_r)
-        elif self is BandwidthSelectionMethods.hlscv:
-            bw = ks.hlscv(data_r)
         elif self is BandwidthSelectionMethods.botev:
             bw = provenance.botev(data_r)
         else:
@@ -58,6 +56,7 @@ class AverageBandwidthSelectionMethod(BandwidthSelectionMethod):
             )
         )
 
+
 averaged_bandwidth_selection_method: Final = AverageBandwidthSelectionMethod(list(BandwidthSelectionMethods))
 
 
@@ -69,12 +68,12 @@ class KDE:
             bw=np.array(self._bw), gridsize=support_size, fft=False
         )
 
-    def guantile_function(self, gridsize: int, lim_sup: float = None, mult_factor: float = 1.5):
+    def quantile_function(self, gridsize: int = 1001, lim_sup: float = None, mult_factor: float = 1.01):
         if (lim_sup is None) or (lim_sup < self._model.support[-1]):
             lim_sup = self._model.support[-1] * mult_factor
 
-        support = self._model.support
-        cdf = self._model.cdf
+        support = np.append(self._model.support, lim_sup)
+        cdf = np.append(self._model.cdf, 1.0)
 
         if self._model.support[0] > 0:
             support = np.append(0, support)
@@ -84,9 +83,7 @@ class KDE:
             x=support, y=cdf, kind="linear", bounds_error=True
         )
 
-        grid = np.append(
-            np.linspace(0, support[-1], num=gridsize)
-        )
+        grid = np.linspace(0, support[-1], num=gridsize)
 
         truncated_cdf = (interpolated_cdf(grid) - interpolated_cdf(0)) / (
                 interpolated_cdf(lim_sup) - interpolated_cdf(0)
@@ -94,10 +91,40 @@ class KDE:
 
         x, y = ensure_strictly_increasing(first_array=truncated_cdf, second_array=grid)
 
-        return scipy.interpolate.interp1d(
-            x=x, y=y, kind="linear", bounds_error=True
+        return InterpolatedQuantileFunction(probs=x, quantiles=y)
+
+
+class QuantileFunctionKDEFitter:
+    """
+        A procedure to fit a quantile function from a univariate data.
+        """
+
+    def __init__(
+            self,
+            gridsize: int = 1001,
+            lim_sup: float = None,
+            method: BandwidthSelectionMethod = averaged_bandwidth_selection_method,
+            mult_factor: float = 1.01,
+    ):
+        self._method = method
+        self._gridsize = gridsize
+        self._lim_sup = lim_sup
+        self._mult_factor = mult_factor
+
+    def _fit(self, data: np.ndarray) -> QuantileFunction:
+        """
+        Returns an interpolated quantile function using a
+        BandwidthSelectionMethod and the KDE class
+        :param data: np.ndarray
+        :return: QuantileFunction
+        """
+        bw = self._method.fit(data=data)
+        kde = KDE(data=data, bw=bw)
+
+        quantile_function = kde.quantile_function(
+            gridsize=self._gridsize,
+            lim_sup=self._lim_sup,
+            mult_factor=self._mult_factor,
         )
 
-
-class FitterKDE:
-    pass
+        return quantile_function
