@@ -13,19 +13,8 @@ MISSING_ENDPOINTS: Final = "Probability end points not included"
 
 
 class QuantileFunction(ABC):
-    """
-    An abstract quantile function.
-    """
-
     @abstractmethod
     def __call__(self, prob: float) -> float:
-        """
-        Evaluates the quantile function at an input probability value.
-
-        :param prob: Probability where to evaluate the quantile
-         function.
-        :return: The quantile function at the input probability.
-        """
         pass
 
     @abstractmethod
@@ -34,17 +23,7 @@ class QuantileFunction(ABC):
 
 
 class InterpolatedQuantileFunction(QuantileFunction):
-    """
-    A quantile function formed through monotone interpolation.
-    """
-
     def __init__(self, probs: np.ndarray, quantiles: np.ndarray):
-        """
-        Initiates the quantile function from a pair of x and y grids.
-
-        :param probs: Horizontal grid, corresponding to probabilities.
-        :param quantiles: Vertical grid, corresponding to quantiles.
-        """
         if len(probs) != len(quantiles):
             raise ValueError(UNEQUAL_LENGTHS)
 
@@ -76,18 +55,9 @@ class InterpolatedQuantileFunction(QuantileFunction):
         )
 
     def __call__(self, prob: float) -> float:
-        """
-        Evaluates the Quantile function in a given point.
-        :param prob: float.
-        :return: float.
-        """
         return self._interpolator(x=prob)
 
     def plot(self):
-        """
-        Plot the quantile function.
-        :return: plot.
-        """
         fig = plt.figure(figsize=(12, 5))
 
         ax = fig.add_subplot(111)

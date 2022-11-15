@@ -95,10 +95,6 @@ class KDE:
 
 
 class QuantileFunctionKDEFitter:
-    """
-        A procedure to fit a quantile function from a univariate data.
-        """
-
     def __init__(
             self,
             gridsize: int = 1001,
@@ -112,12 +108,6 @@ class QuantileFunctionKDEFitter:
         self._mult_factor = mult_factor
 
     def fit(self, data: np.ndarray) -> QuantileFunction:
-        """
-        Returns an interpolated quantile function using a
-        BandwidthSelectionMethod and the KDE class
-        :param data: np.ndarray
-        :return: QuantileFunction
-        """
         bw = self._method.fit(data=data)
         kde = KDE(data=data, bw=bw)
 
